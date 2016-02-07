@@ -1,0 +1,201 @@
+.remark-slide-number {
+	display: none;
+}
+
+.remark-slide .remark-slide-content {
+	padding: 0.5em 0.65em;
+}
+
+.remark-slide-content {
+	font-size: 1.8em;
+}
+
+body {
+	color: #191919;
+}
+
+p {
+	margin: 0.1em 0 0.4em 0;
+}
+
+code {
+	-moz-border-radius: 5px;
+	-web-border-radius: 5px;
+	border-radius: 5px;
+	font-weight: bold;
+	font-size: 1.0em;
+	font-family: 'Courier New', monospace;
+}
+
+.remark-code {
+	font-weight: 900;
+	font-size: 19.5px;
+}
+
+pre code {
+	font-size: 0.88em;
+	background-color: #FFFFFF !important;
+}
+
+.bigCode .remark-inline-code {
+	font-size: 1.5em;
+}
+
+.hljs-magula .hljs-comment {
+	color: #676767;
+}
+
+a {
+	text-decoration: none;
+}
+
+.rightFloat,.leftFloat {
+	font-size: 0.8em;
+}
+
+.codeFloatRight {
+	float: right;
+	font-size: 0.8em;
+}
+
+.rightFloat {
+	float: right;
+}
+
+.leftFloat {
+	float: left;
+}
+
+.caption {
+	position: relative;
+	top: 190px;
+}
+
+.footnote {
+	margin-top: 30px;
+	font-size: 0.5em;
+}
+
+.gap {
+	display: block;
+	margin-top: 40px;
+}
+
+.intro h1 {
+	line-height: 1.2em;
+	font-size: 1.8em !important;
+}
+
+.transition,.transition p {
+	color: rgb(255, 255, 255);
+}
+
+.transition {
+	background-color: rgb(76, 102, 164);
+	line-height: 1.7em;
+}
+
+.transition a {
+	color: rgb(255, 255, 255);
+}
+
+.transition img {
+	border: 1px solid white;
+	margin: 0.5em 0;
+}
+
+.xkcd img {
+	width: 230px;
+	border-radius: 10px;
+}
+
+.tweet img {
+	width: 500px;
+	border-radius: 5px;
+}
+
+.twitter-grep img,.twitter-grep-fibs img {
+	margin-top: 20px;
+}
+
+.twitter-grep-fibs img {
+	width: 800px;
+}
+
+.questions {
+	font-size: 1.4em;
+	display: block;
+	margin-top: 50px;
+}
+
+body {
+	font-family: arial, sans-serif;
+	font-weight: 400;
+}
+
+ul {
+	margin: 0.2em 0em 0.2em 0.3em;
+}
+
+h1,h2,h3 {
+	font-family: arial, sans-serif;
+	font-weight: bold;
+	margin: 5px 0px;
+}
+
+h1 {
+	color: rgb(255, 255, 255);
+	background-color: rgb(76, 102, 164);
+	border-radius: 10px;
+	padding: 5px 10px;
+}
+
+.remark-slide-content h1 {
+	font-size: 1.3em;
+}
+
+.remark-slide-content h2 {
+	font-size: 1.2em;
+	margin-bottom: 20px;
+}
+
+.remark-slide-content h3 {
+	font-size: 1.0em;
+}
+
+.slide .content {
+	padding: 10px 90px !important;
+}
+
+#slideshow .no-highlight {
+	font-size: 1em !important;
+}
+
+blockquote {
+	font-style: italic;
+	margin: 0.25em 0;
+	padding: 0.25em 40px;
+	line-height: 1.45;
+	position: relative;
+}
+
+blockquote:before {
+	opacity: 0.8;
+	display: block;
+	content: "\201C";
+	font-size: 3em;
+	position: absolute;
+	left: -20px;
+	top: -20px;
+}
+
+blockquote cite {
+	opacity: 0.8;
+	font-size: 1em;
+	display: block;
+	margin-top: 5px;
+}
+
+blockquote cite:before {
+	content: "\2014 \2009";
+}
