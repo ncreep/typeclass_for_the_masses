@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title> A Taste of Haskell for Scala Programmers</title>
+<title>Typeclasses</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel='stylesheet' type='text/css' href='style.css' />
 </head>
@@ -14,16 +14,145 @@ class: center, middle, transition, intro
 
 .caption[Daniel Beskin]
 ???
--
+- In this talk we are going to discuss typeclasses
+- Typeclasses are a functional "design pattern"
+- It allows us to write extendible code at the right level of abstraction
+- This pattern is very common in the Scala ecosystem
+- Learning it will make various libraries easier to use
+
+---
+class: center, middle, transition
+
+Motivation - Sorting
+
+???
+- First, a bit of motivation to get ourselves started
+- The running example will be a generic sorting function
+---
+## Java-style - attempt #1
+```
+trait Orderable[A] {
+  def compare(that: A): Int
+}
+
+
+{{content}}
+```
+
+???
+- Here's a naive Java style attempt
+- We define a `Orderable` trait for things that can be sorted by our function
+
+--
+def sort[A <: Orderable](xs: List[A]): List[A]
+
+
+{{content}}
+???
+- Given a list of `Orderable`s, we can use their `compare` method to sort them
+- For example:
+--
+
+case class Dog(name: String) extends Orderable[Dog] {
+  def compare(that: Dog) = ???
+}
+
+???
+- TODO better examples
+- The problem with that approach is that it's not extensible
+- If a type is not in our control, we can't make it `Orderable` after the fact
 ---
 
-- Motivation: ordering adapter interface
-- Full definition
-- Benefits:
-  * Less typing
-  * Compiler composition
-  * Type driven
--
+## Java-style - attempt #2
+
+```
+trait Oredring[A] {
+  def compare(x: A, y: A): Int
+}
+
+
+{{content}}
+```
+
+???
+- Taking out our design patterns book, the Adapter design pattern fits the bill
+- It allows to adapt existing classes to our new abtraction
+- We now define `Ordering` as a standalone entity
+
+--
+def sort[A](xs: List[A], ord: Ordering[A]): List[A]
+
+
+{{content}}
+???
+- Sorting now takes an adapter parameter
+- And so we can now adapt any existing class to our `Ordering` abstraction
+
+--
+
+case class Dog(name: String)
+
+
+val dogOrdering = new Ordering[Dog] {
+  def compare(x: Dog, y: Dog) = ???
+}
+
+
+sort(List(d1, d2, d3), dogOrdering)
+
+???
+- We now have an extinsble ordering, but the usage is a bit clumsy, we have
+to pass these `Ordering` around
+- Given that we use Scala, we can sprinkle some implicit magic to make a bit
+nicer to use
+
+---
+## Java-semi-Scala-style - attempt #1
+
+```
+def sort[A](xs: List[A])(implicit ord: Ordering[A]): List[A]
+
+
+{{content}}
+```
+
+--
+implicit val dogOrdering = new Ordering[Dog] {
+  def compare(x: Dog, y: Dog) = ???
+}
+
+
+sort(List(d1, d2, d3))
+
+???
+- Now we don't have to pass `Ordering`s around
+- Once we make them implicit, the compiler will take care of passing them around for us
+- And that's about 90% of typeclasses
+- The typeclasses formalizes this pattern, and gives a bit more of a punch
+
+---
+
+- Motivation: Ordering adapter interface (5 min)
+- Full definition: (5 min)
+  * class definition
+  * instance definition
+  * operator syntax
+- Benefits: (10 min)
+  * Less typing (at use site)
+  * Extensibility
+  * Compiler composition (Ord[A] => Ord[List[A]])
+  * Type-driven
+  * Functional style (can abstract over construction of a type)
+  * Abstract definition, many usages/code reuse (example: folding over monoids)
+- Full example: add converters for typesafe config (show library that does it) (10 min)
+- Examples in the wild (definitions and usage): (10 min)
+  * Eq, Ord (standard library), Show
+  * Numeric (standard library)
+  * Parsing/serilization: JSON codecs (Play)
+  * Algebraic: monoid, group (Spire)
+  * Abstract: functor, applicative, monad (Scalaz, Cats)
+- Extras: macro libraries for typeclass generation (shapeless, machinist) (5 min)
+
 
 
 
