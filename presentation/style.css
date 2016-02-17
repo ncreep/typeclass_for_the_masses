@@ -1,5 +1,5 @@
 .remark-slide-number {
-	display: none;
+	//display: none;
 }
 
 .remark-slide .remark-slide-content {
@@ -135,6 +135,10 @@ body {
 
 ul {
 	margin: 0.2em 0em 0.2em 0.3em;
+}
+
+li {
+	margin-top: 35px;
 }
 
 h1,h2,h3 {

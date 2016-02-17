@@ -29,7 +29,7 @@ Motivation - Sorting
 - First, a bit of motivation to get ourselves started
 - The running example will be a generic sorting function
 ---
-## Java-style - attempt #1
+## Java-style, take #1 - Inheritance
 ```
 trait Orderable[A] {
   def compare(that: A): Int
@@ -53,17 +53,16 @@ def sort[A <: Orderable](xs: List[A]): List[A]
 - For example:
 --
 
-case class Dog(name: String) extends Orderable[Dog] {
-  def compare(that: Dog) = ???
+case class Clippy(annoyanceLevel: Int) extends Orderable[Clippy] {
+  def compare(that: Clippy) = ???
 }
 
 ???
-- TODO better examples
 - The problem with that approach is that it's not extensible
 - If a type is not in our control, we can't make it `Orderable` after the fact
 ---
 
-## Java-style - attempt #2
+## Java-style, take #2 - Adapter
 
 ```
 trait Oredring[A] {
@@ -90,24 +89,24 @@ def sort[A](xs: List[A], ord: Ordering[A]): List[A]
 
 --
 
-case class Dog(name: String)
+case class Clippy(annoyanceLevel: String)
 
 
-val dogOrdering = new Ordering[Dog] {
-  def compare(x: Dog, y: Dog) = ???
+val clippyOrdering = new Ordering[Clippy] {
+  def compare(x: Clippy, y: Clippy) = ???
 }
 
 
-sort(List(d1, d2, d3), dogOrdering)
+sort(List(c1, c2, c3), clippyOrdering)
 
 ???
-- We now have an extinsble ordering, but the usage is a bit clumsy, we have
+- We now have an extensible ordering, but the usage is a bit clumsy, we have
 to pass these `Ordering` around
-- Given that we use Scala, we can sprinkle some implicit magic to make a bit
+- Given that we use Scala, we can sprinkle some implicit magic to make it a bit
 nicer to use
 
 ---
-## Java-semi-Scala-style - attempt #1
+## Java-semi-Scala-style
 
 ```
 def sort[A](xs: List[A])(implicit ord: Ordering[A]): List[A]
@@ -117,12 +116,12 @@ def sort[A](xs: List[A])(implicit ord: Ordering[A]): List[A]
 ```
 
 --
-implicit val dogOrdering = new Ordering[Dog] {
-  def compare(x: Dog, y: Dog) = ???
+implicit val clippyOrdering = new Ordering[Clippy] {
+  def compare(x: Clippy, y: Clippy) = ???
 }
 
 
-sort(List(d1, d2, d3))
+sort(List(c1, c2, c3))
 
 ???
 - Now we don't have to pass `Ordering`s around
@@ -131,18 +130,169 @@ sort(List(d1, d2, d3))
 - The typeclasses formalizes this pattern, and gives a bit more of a punch
 
 ---
+class: center, middle, transition
 
+Definition
+???
+- Now we are ready to actually define typeclasses
+
+---
+## Typeclasses - Definition
+
+
+A class definition:
+```
+trait Oredring[A] {
+  def compare(x: A, y: A): Int
+}
+```
+???
+- A typeclasses consists of a "class definition"
+- Typically a trait, parameterized by a type variable, `A`
+- With methods operating on `A`
+- The terminonlogy comes from Haskell, where type classes are an actual specially supported language feature
+- The word "class" here has nothing to do with OO-style classes
+--
+
+Typeclass instances:
+
+```
+implicit val clippyOrdering = new Ordering[Clippy] {
+  def compare(x: Clippy, y: Clippy) = ???
+}
+```
+
+???
+- For a given class definition we can have many "instances"
+- An instance is defined for a specific choice of the type parameter `A`
+- An instance is provided as an implicit value or definition
+- This is called "the Ordering instance for `Clippy`"
+- What we are doing is declaring the fact that the type can be ordered, and tell the compiler how
+- In other words: the `Clippy` type belongs to a class of types that have an `Oredring`
+- Hence the name of the pattern: "typeclasses"
+
+---
+## Typeclasses at the Use-site
+
+Generic functions:
+
+```
+def sort[A](xs: List[A])(implicit ord: Ordering[A]): List[A]
+
+
+{{content}}
+```
+???
+- We use typeclasses to define functions that are generic over the typeclass instance
+- This can be rewritten as follows
+--
+def sort[A: Ordering](xs: List[A]): List[A]
+
+???
+- This is equivalent to the above line but better conveys our intent
+- Which is: given that `A` has an instance of `Ordering`, that is it belong to the `Ordering` class, then we can define a sort for it
+
+--
+
+Operator syntax
+```
+implicit class OrderingOps[A: Ordering](a: A) {
+  def <=(other: A) = ....
+}
+
+
+Clippy(2) <= Clippy(5)
+```
+
+???
+- Since typeclasses are defined outside the object that actually use them
+- It's often use the pimp my type pattern to define operator syntax for instances of some classes
+- This reads as follows: given that `A` has an instance of `Ordering`, we can use the following methods/operators on it
+- Where inside the definitions will make some use of of the implicit typeclass instance that we have in scope
+
+---
+
+## Benefits
+--
+
+- Abstraction
+
+???
+- Code that we write against a typeclass instance can be very generic
+- Since it works directly with an abstraction, it is precise, we don't have access to any information outside the abstraction
+- This can lead to much code reuse, since a single definition can be applicable in many contexts
+--
+
+- Extensibility
+
+???
+- Unlike the inheritance based OO solution, typeclasses are extensible
+- A type can be included in a class even after the type was defined
+- This means that we can adapt old code to new use cases without modifying the code itself
+--
+
+- Type-driven
+???
+- The two previous items were also applicable to the `Adapter` pattern
+- What we gain in make use of implicits, is the fact that the compiler can do some work for us
+- We can think of implicits as a way to tell the compiler some information
+- By creating an implicit `Ordering` for `Clippy`, we are telling the compiler that `Clippy` can be ordered
+- The compiler can use this information to derive new facts from it, like how to make an `Ordering` for `List[Clippy]`
+- For example
+--
+
+        implicit def listOrd[A: Ordering]: Ordering[List[A]]
+
+---
+## Un-benefits
+
+- Indirection
+
+???
+
+- Writing typeclasses-heavy code can lead to significant amount of indirection
+- Which in some cases may not be appropriate and result in harder to code to read/maintain
+- This may, also, sometimes have performance consequences (though we'll see  how to address it later on)
+
+--
+
+- No direct language support
+
+???
+
+- Typeclasses, as a whole, are not a language feature, correspondingly, there isn't direct language support for it
+- For example: there isn't special Scaladoc format for it, and the compilation errors may not be as informative as possible
+--
+
+- Implicit madness
+
+???
+
+- Last, since typeclasses make use of implicits, in some cases non-trivial logic can be encoded in the implicit resolution process
+- Which can result in hard to decipher code and compilation errors.
+
+---
+class: center, middle, transition
+
+Case Study: Configuration Converters
+---
+
+
+
+
+
+---
+---
 - Motivation: Ordering adapter interface (5 min)
 - Full definition: (5 min)
   * class definition
   * instance definition
   * operator syntax
 - Benefits: (10 min)
-  * Less typing (at use site)
   * Extensibility
   * Compiler composition (Ord[A] => Ord[List[A]])
   * Type-driven
-  * Functional style (can abstract over construction of a type)
+  * Functional style (can abstract over construction of a type) - TODO note this in some example
   * Abstract definition, many usages/code reuse (example: folding over monoids)
 - Full example: add converters for typesafe config (show library that does it) (10 min)
 - Examples in the wild (definitions and usage): (10 min)
