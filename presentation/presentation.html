@@ -282,7 +282,7 @@ Extended Example: Configuration Readers
 - We will now try to write a small wrapper around Typesafe config to make it a bit more useable
 ---
 
-## <del>Typesafe</del> Lightbend Config
+## ~~Typesafe~~ Lightbend Config
 
 ```
 config.getString("clippy.name")
@@ -478,7 +478,6 @@ config\.get[Clippy]("clippy.annoyanceLevel")
 - And now we can use it like so
 - This concludes our example
 - You may be pleased to know that this functionality and much more is available in the Ficus library
---
 
 ---
 class: center, middle, transition
@@ -488,6 +487,7 @@ Typeclasses in the Wild
 ???
 
 - In this part, we will give a brief overview of the various typeclasses the exist in the Scala ecosystem
+- Since typeclasses are present in many libraries, knowing this pattern might help when trying to use them
 ---
 ## Standard Typeclasses
 
@@ -512,7 +512,7 @@ trait Equality[A] {
 --
 
 ```
-trait Ordering { ... }
+trait Ordering[A] { ... }
 ```
 
 ???
@@ -533,10 +533,163 @@ trait Numeric[T] {
 - It is present in Scala's standard library
 - But it's quite slow for performance intensive code
 - There's analogous code in the Spire library that should be very performant
+- One can define many other numeric types, like fractional, in places where the full power of `Numeric` is not needed
 
 ---
 
 ## Parsing and Serialization
+
+```
+trait Writes[A] {
+  def writes(a: A): JsValue
+}
+
+
+trait Reads[A] {
+  def reads(json: JsValue): A
+}
+```
+
+???
+- Parsing and serialization is one of the most common use cases for typeclasses
+- Since pretty much by definition it's an open world problem
+- For example, Play! uses typeclasses for reading and writing JSON values for arbitrary types
+- Just like in the `ValueConverter` example, readers and writes can be automatically for complex types using definitions for basic types
+- Play! has a macro that does that for case classes
+
+---
+
+## Algebra
+
+```
+trait Monoid[A] {
+  def id: A
+  def op(x: A, y: A): A
+}
+
+
+trait NRoot[A] {
+  def nroot(a: A, n: Int): A
+}
+
+
+trait InnerProductSpace[V, F] {
+  def dot(v: V, w: V): F
+}
+```
+
+???
+- There's a whole bunch of typeclasses that can be defined to capture various concept in abstract algebra
+- This is just a sample from the typeclasses available in Spire
+- Although quite abstract these abstractions find their way into real code
+- For example, the `Monoid` type captures the notion of things that can be aggregated
+- And it's quite popular in the world of big-data, as such, it's actually defined in a number of different libraries
+- One of the benefits of working with these abstract types is code reuse
+--
+
+```
+def accumulate[A: Monoid](xs: List[A]): A =
+  xs.foldLeft(id)(_ |+| _)
+```
+
+???
+- For example, you can write generic code for some accumulation logic (like a fold) based on a `Monoid`
+- The `|+|` operator is an alias for `op`
+- This reads as: given a list of `A`s, where `A` has a `Monoid` instance
+- Fold the list, and use the `Monoid` operation to combine the values into a single value
+- And the very same code can work for any type that has an instance of `Monoid`
+- And there are many types that can be viewed as monoids: numbers, strings, maps, etc.
+
+---
+
+## Abstract Nonsense
+
+???
+
+- Last, but definitely not least, are the typeclasses that come from the world of category theory
+- Just like the algebraic typeclasses, these abstraction can be very useful in programming
+- We'll briefly review a couple of types, but they deserve a number of talks of their own
+--
+
+```
+trait Functor[F[_]] {
+  def map[A, B](fa: F[A])(f: A => B): F[B]
+}
+```
+
+???
+
+- `Functor` represents things that can be mapped over, like list, futures, etc.
+- We can think of `F[_]` as some kind of context in which we are mapping
+- So a list or a future is a kind of context in which we perform a computation
+
+--
+
+```
+trait Applicative[F[_]] extends Functor[F] {
+  def unit[A](a: A): F[A]
+  def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C]
+}
+```
+???
+
+- `Applicative` gives us a `map` on steroids
+- `map2` lets us combine values inside a context
+- This might somewhat abstract, but the weird operators that we use with `Validation` are defined in terms of `Applicative`
+- In this case `Validation` is the context and `map2` let's us build complicated objects from validated parts
+- Let's look at an example of a useful function that can be written in terms of `Applicative`
+---
+
+## Using Applicatives
+
+```
+def sequence[F[_]: Applicative, A](fs: List[F[A]]): F[List[A]]
+
+
+{{content}}
+```
+
+???
+- This function can be read as: given a list of things in an applicative context
+- Create a list of things and put the whole list inside the context
+- You may be familiar with something similar: the `sequence` function on `Future` in the standard library
+- This one is a generalization that works for anything that has an `Applicative` instance
+- Like `Option`s `Validation`s and whatnot
+- We need to write it once in term of `Applicative` and we get all these use cases for free
+- Here's the implementation
+
+--
+
+def sequence[F[_], A](fs: List[F[A]])
+                     (implicit ap: Applicative[F]): F[List[A]] =
+  fs match {
+    case Nil => ap.unit(Nil)
+    case fa :: rest => ap.map2(fa, sequence(rest))(_ :: _)
+  }
+
+
+???
+- It's a bit tricky, but if you just follow the types, it kind of writes itself
+- Figuring out how it works is left as an exercise
+
+
+```
+trait Monad[F[_]] extends Applicative[F] {
+  def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+}
+```
+
+???
+
+- The infamous `Monad` defines `flatMap`
+- We will not delve into a full `Monad` explanation here
+- But for this context we can think of `Monad`s as letting us sequence computations inside of a context
+- So given some value in a context, like in a future
+- We can take a function that produces another future and apply it inside the original future
+- The final result is yet another future
+- `Monad`s are actually the theoretical foundation for "for comprehesions", also known as "monad comprehensions"
+
+
 
 ---
 ---
@@ -549,7 +702,7 @@ trait Numeric[T] {
   * Extensibility
   * Compiler composition (Ord[A] => Ord[List[A]])
   * Type-driven
-  * Functional style (can abstract over construction of a type) - TODO note this in some example
+  * Functional style (can abstract over construction of a type)
   * Abstract definition, many usages/code reuse (example: folding over monoids)
 - Full example: add converters for typesafe config (show library that does it: https://github.com/iheartradio/ficus) (10 min)
 - Examples in the wild (definitions and usage): (10 min)
