@@ -140,7 +140,7 @@ Definition
 ## Typeclasses - Definition
 
 
-A class definition:
+A class:
 ```
 trait Oredring[A] {
   def compare(x: A, y: A): Int
@@ -154,7 +154,7 @@ trait Oredring[A] {
 - The word "class" here has nothing to do with OO-style classes
 --
 
-Typeclass instances:
+An instance:
 
 ```
 implicit val clippyOrdering = new Ordering[Clippy] {
@@ -191,13 +191,13 @@ def sort[A: Ordering](xs: List[A]): List[A]
 ???
 - This is equivalent to the above line but better conveys our intent
 - Which is: given that `A` has an instance of `Ordering`, that is it belong to the `Ordering` class, then we can define a sort for it
-
+- The syntax is called a "context bound", meaning that we operate on `A`, given some context can be implicitly provided for `A`
 --
 
 Operator syntax
 ```
 implicit class OrderingOps[A: Ordering](a: A) {
-  def <=(other: A) = ....
+  def <=(other: A) = ???
 }
 
 
@@ -274,12 +274,269 @@ Clippy(2) <= Clippy(5)
 ---
 class: center, middle, transition
 
-Case Study: Configuration Converters
+Extended Example: Configuration Readers
+
+???
+
+- Let's put typeclasses to use
+- We will now try to write a small wrapper around Typesafe config to make it a bit more useable
 ---
 
+## <del>Typesafe</del> Lightbend Config
+
+```
+config.getString("clippy.name")
+
+config.getInt("clippy.annoyanceLevel")
+
+config.getStringList("clippy.tips")
+
+
+{{content}}
+```
+
+???
+- Typesafe config is rather annoying, to get something out of it, we need to call a special method that matches the type
+- The number of types is limited - only the one's defined by the library authors
+- And the types themselves are not always nice to work with, like the Java collections that they return
+
+--
+
+get[String](config, "clippy.name")
+
+get[Int](config, "clippy.annoyanceLevel")
+
+get[List[String]](config, "clippy.tips")
+
+
+{{content}}
+
+???
+
+- This is the function that we want to have
+- We give it the type of thing that we want to fetch, and it fetches
+- Note how this is a single function for all types
+- But we want more, we want to be able to extend it with our own types
+- For example
+--
+
+get[Clippy](config, "clippy.annoyanceLevel")
+
+???
+- So what we want, is a "smart" function, that is open for extension by third parties
+- This is perfect use case for typeclasses
+---
+
+## The Typeclass
+
+```
+trait ValueReader[A] {
+  def read(config: Config, key: String): A
+}
+
+
+{{content}}
+```
+
+???
+- This is the typeclass that we'll use
+- Given some type `A`, it will give us the ability to read it from a config
+- For example, here's the `Int` instance
+
+--
+
+implicit val intValueReader = new ValueReader[Int] {
+  def read(config: Config, key: String): Int = config.getInt(key)
+}
+
+
+{{content}}
+???
+- This is just a wrapper around the original functionality
+- We are adapting it to our new typeclass interface
+- Similarly, we can define instances for all the built-in config getters
+- Let's how we define our getter function
+--
+
+implicit val stringValueReader = new ValueReader[String] {
+  def read(config: Config, key: String) = config.getString(key)
+}
+
+
+implicit val stringListValueReader = new ValueReader[List[String]] {
+  def read(config: Config, key: Sting) =
+    config.getStringList(key).asScala
+}
+
+???
+- And similarly for other primitive types
+- Note that here we already adapt the list to be a Scala `List`, so we already gained some adapting benefit
+---
+
+## The Getter Function
+```
+def get[A: ValueReader](config: Config, key: String): A =
+  implicitly[ValueReader[A]].read(config, key)
+
+
+{{content}}
+```
+???
+- This can be read as follows: given a `ValueReader` for `A`, a config and a key, fetch an `A`
+- The implementation is straightforward
+- First summon the implicit `ValueReader` for `A`, which must be present since we have a context bound in place
+- Then read the value from the config using the reader
+- Alternatively, we can drop the context bound and write the function with an implicit
+- Like so
+
+--
+def get[A](config: Config, key: String)
+          (implicit reader: ValueReader[A]): A =
+  reader.read(config, key)
+
+
+???
+- So what have we gained from writing it this way?
+- First, this solution is extensible, anyone can write a `ValueReader` for any type they want
+- Like so
+
+---
+
+## More Readers
+
+```
+implicit val clippyReader = new ValueReader[Clippy] {
+  def read(config: Config, key: String): Clippy =
+    Clippy(annoyanceLevel = config.getInt(key))
+}
+
+
+get[Clippy](config, "clippy.annoyanceLevel")
+
+
+{{content}}
+```
+
+???
+- But we can do even fancier things, we can let the compiler do the hard work for us
+- As I mentioned previously, implicits are a way to communicate with the compiler
+- And the compiler can derive new things for us
+- Here's an example
+
+--
+
+implicit def optionValueReader[A: ValueReader] =
+  new ValueReader[Option[A]] {
+    def read(config: Config, key: String): Option[A] =
+      if (config.hasPath(key)) Some(get[A](config, key))
+      else None
+  }
+
+
+{{content}}
+???
+- This can be read as: given that we know how to read a value of some type `A`
+- Then we can automatically derive how to read a value of `Option[A]`
+- And it can be used as follows
+
+--
+
+get[Option[Int]](config, "clippy.annoyanceLevel")
+
+???
+- Note that we don't have to do any special construction for the `ValueReader` for `Option`
+- When the compiler sees the type `Option[Int]`, it automatically finds our `opitonValueReader` and `intReader`
+- And then uses them to construct the right instance for `Option[Int]`, with no new code from our side
+- We can do similar things for lists or maps
+- Even fancier, we can right a generic `ValueReader` that will allow the compiler to build a reader for any case class
+- Though for these kinds of things we'll need either macros or `Shapeless`
+
+---
+## Pimp My Config
+
+```
+implicit class ConfigOps(config: Config) {
+  def get[A: ValueReader](key: String): A = get[A](config, key)
+}
+
+
+{{content}}
+
+```
+
+???
+- It may feel a bit unnatural to use our `get` function, since it's not on `config`
+- To remedy this, we can use the `pimp my class pattern` to make it nicer to use
+
+--
+
+config\.get[Clippy]("clippy.annoyanceLevel")
 
 
 
+???
+- And now we can use it like so
+- This concludes our example
+- You may be pleased to know that this functionality and much more is available in the Ficus library
+--
+
+---
+class: center, middle, transition
+
+Typeclasses in the Wild
+
+???
+
+- In this part, we will give a brief overview of the various typeclasses the exist in the Scala ecosystem
+---
+## Standard Typeclasses
+
+???
+- We will start with some basic typecalsses
+- The reason I'm calling them standard is because they're inspired by typeclasses in Haskell's standard library
+--
+
+
+```
+trait Equality[A] {
+  def areEqual(a: A, b: A): Boolean
+}
+```
+
+???
+- This can be used to customize equality checks, beyond the standard `equals` method
+- For example, ScalaTest, has equality matchers that use this to override the standard equals
+- Since this is extensible, as library users, you can implement use it yourself by implementing special equality checks for your tests
+- E.g., for testing JSON strings, ignoring the formatting
+- Note that this function is safer than the regular `equals` since it uses `A` instead of `Any` as the parameters
+--
+
+```
+trait Ordering { ... }
+```
+
+???
+- The `Ordering` that we already explored is defined in Scala's standard library and is used there
+
+--
+
+```
+trait Numeric[T] {
+  def fromInt(x: Int): T
+  def abs(x: T): T
+  ...
+}
+```
+
+???
+- This typeclass let's us write generic numeric code without thinking about the specific implementation
+- It is present in Scala's standard library
+- But it's quite slow for performance intensive code
+- There's analogous code in the Spire library that should be very performant
+
+---
+
+## Parsing and Serialization
 
 ---
 ---
@@ -294,7 +551,7 @@ Case Study: Configuration Converters
   * Type-driven
   * Functional style (can abstract over construction of a type) - TODO note this in some example
   * Abstract definition, many usages/code reuse (example: folding over monoids)
-- Full example: add converters for typesafe config (show library that does it) (10 min)
+- Full example: add converters for typesafe config (show library that does it: https://github.com/iheartradio/ficus) (10 min)
 - Examples in the wild (definitions and usage): (10 min)
   * Eq, Ord (standard library), Show
   * Numeric (standard library)
