@@ -175,6 +175,10 @@ h1 {
 	font-size: 1em !important;
 }
 
+.remark-notes li {
+	margin: 0px;
+}
+
 blockquote {
 	font-style: italic;
 	margin: 0.25em 0;
