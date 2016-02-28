@@ -15,15 +15,25 @@ class: center, middle, transition, intro
 .caption[Daniel Beskin]
 ???
 - In this talk we are going to discuss typeclasses
-- Typeclasses are a functional "design pattern"
+---
+class: center, middle, transition
+
+> All problems in programming can be solved by another typeclass
+  <br />...except for the problem of too many typeclasses.
+
+.footnote[\- Old programming wisdom, slightly paraphrased]
+
+???
+- Typeclasses are a functional "design pattern" and a way to create abstractions
 - It allows us to write extendible code at the right level of abstraction
 - This pattern is very common in the Scala ecosystem
 - Learning it will make various libraries easier to use
-
 ---
 class: center, middle, transition
 
 Looking for Motivation
+
+.suicide[![](suicide.png)]
 
 ???
 - First, a bit of motivation to get ourselves started
@@ -110,19 +120,21 @@ nicer to use
 
 ```
 def sort[A](xs: List[A])(implicit ord: Ordering[A]): List[A]
-
-
-{{content}}
 ```
 
+
+
 --
+```
 implicit val clippyOrdering = new Ordering[Clippy] {
   def compare(x: Clippy, y: Clippy) = ???
 }
 
 
 sort(List(c1, c2, c3))
+```
 
+.java[![](java.png)]
 ???
 - Now we don't have to pass `Ordering`s around
 - Once we make them implicit, the compiler will take care of passing them around for us
@@ -132,7 +144,9 @@ sort(List(c1, c2, c3))
 ---
 class: center, middle, transition
 
-Definition
+Typeclasses - Definition
+
+.tooling[![](tooling.png)]
 ???
 - Now we are ready to actually define typeclasses
 
@@ -257,6 +271,8 @@ Clippy(2) <= Clippy(5)
 --
 
 - No direct language support
+.spell[![](spell.png)]
+
 
 ???
 
@@ -276,6 +292,7 @@ class: center, middle, transition
 
 Extended Example: Configuration Readers
 
+.quip[![](quip.png)]
 ???
 
 - Let's put typeclasses to use
@@ -465,18 +482,18 @@ implicit class ConfigOps(config: Config) {
   def get[A: ValueReader](key: String): A = get[A](config, key)
 }
 
-
-{{content}}
-
 ```
+
 
 ???
 - It may feel a bit unnatural to use our `get` function, since it's not on `config`
 - To remedy this, we can use the `pimp my class pattern` to make it nicer to use
 
 --
-
-config\.get[Clippy]("clippy")
+```
+config.get[Clippy]("clippy")
+```
+.pimp[![](pimp.png)]
 
 
 
@@ -489,6 +506,8 @@ config\.get[Clippy]("clippy")
 class: center, middle, transition
 
 Typeclasses in the Wild
+
+.exciting[![](exciting.png)]
 
 ???
 
@@ -645,6 +664,11 @@ trait Applicative[F[_]] extends Functor[F] {
 - This might be somewhat abstract, but the weird operators that we use with `Validation` are defined in terms of `Applicative`
 - In this case `Validation` is the context and `map2` let's us build complicated objects from validated parts
 - Let's look at an example of a useful function that can be written in terms of `Applicative`
+
+--
+
+.monads1[![](monads_1.png)]
+
 ---
 
 ## Using Applicatives
@@ -692,6 +716,8 @@ sequence(List(Option(1), None, Option(3)))
 // => None
 ```
 
+.monads2[![](monads_2.png)]
+
 ???
 - This will work given that we actually defined an `Applicative` instance for `Option`
 - Similarly, we can apply `sequence` to `Future` or `Validation`
@@ -702,6 +728,8 @@ sequence(List(Option(1), None, Option(3)))
 class: center, middle, transition
 
 Extras
+
+.captive[![](captive.png)]
 
 ???
 
@@ -780,7 +808,16 @@ import shapeless.contrib.spire._
 
 
 case class Clippy(annoyanceLevel: Int, persistence: Int)
+```
+???
+- Some typeclasses can be derived mechanically given some case class or a sealed case class hierarchy
+- Examples include some of the standard typeclasses, monoids and Functors
+- Shapeless provides some machinery to generate the typeclass instances for us
+- And the library Shapless-contrib provides the machinery for some common typeclasses
+- In  this example by just using some magic imports, we automatically able to derive an `AdditiveMonoid` for `Clippy`
 
+--
+```
 
 Clippy(5, 3) + Clippy(3, 4) // => Clippy(8, 7)
 ```
@@ -788,17 +825,17 @@ Clippy(5, 3) + Clippy(3, 4) // => Clippy(8, 7)
 
 
 ???
-- Some typeclasses can be derived mechanically given some case class or a sealed case class hierarchy
-- Examples include some of the standard typeclasses, monoids and Functors
-- Shapeless provides some machinery to generate the typeclass instances for us
-- And the library Shapless-contrib provides the machinery for some common typeclasses
-- In  this example by just using some magic imports, we automatically able to derive an `AdditiveMonoid` for `Clippy`
 - So without ever defining the `+` operator for it, we get and it does the right thing
 
 ---
 class: center, middle, transition
 
 FIN
+
+--
+
+.pop[![](pop.png)]
+
 
 
 
