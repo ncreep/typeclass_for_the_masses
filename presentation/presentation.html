@@ -709,29 +709,96 @@ Extras
 - As a finishing touch, we'll touch upon a couple of advanced libraries that make the usage of typeclasses a bit more pleasant
 ---
 
+## Simulacrum
+
+```
+import simulacrum._
+
+@typeclass trait Monoid[A] {
+  @op("|+|") def op(x: A, y: A): A
+}
+```
+
+???
+- As you might have noticed, defining a new typeclass is a bit boilertlaty
+- We need to both define a trait for the typeclass and a class for the implicit operations
+- The Simulacrum library let's you cut down on the boilerplate by using a macro annotation
+- With this definition, we define a single trait and get both the typeclass definition and the implicit operators generated for us
+- This is almost half way towards language support
+---
+
+## Machinist
+
+```
+import machinist.DefaultOps
+
+trait Equality[@specialized A] {
+  def eqv(lhs: A, rhs: A): Boolean
+}
+
+object Equality {
+  implicit val intEq = new Eq[Int] {
+    def eqv(lhs: Int, rhs: Int): Boolean = lhs == rhs
+  }
+
+  implicit class EqOps[A](x: A)(implicit ev: Eq[A]) {
+    def ===(rhs: A): Boolean = macro DefaultOps.binop[A, Boolean]
+  }
+}
+
+{{content}}
+```
+
+???
+- Also of note about typeclasses, is that all of the indirection that is used between the actual operation and the typeclass definition may incur a performance cost
+- This is may be especially important in cases where typeclasses are used for numerics
+- The Machinist library provides a macro that can cut down this cost
+- As we see in this example, we are defining an equality typeclass
+- When we define an operator for it, `===` we use the Machinist macro instead of writing it ourselves
+
+--
+object Test {
+  import Eq.EqOps
+
+  def test(a: Int, b: Int)(implicit ev: Eq[Int]): Int =
+    if (a === b) 999 else 0
+}
+
+// if (Eq.intEq.eqv$mcI$sp(a, b)) 999 else 0
+
+
+???
+- At the use-site, the macros unwraps all the indirection levels and the final result compiles to an unboxed equality of two integers
+- This is what the Spire library uses behind the scenes to achieve fast generic code
 
 ---
----
-- Motivation: Ordering adapter interface (5 min)
-- Full definition: (5 min)
-  * class definition
-  * instance definition
-  * operator syntax
-- Benefits: (10 min)
-  * Extensibility
-  * Compiler composition (Ord[A] => Ord[List[A]])
-  * Type-driven
-  * Functional style (can abstract over construction of a type)
-  * Abstract definition, many usages/code reuse (example: folding over monoids)
-- Full example: add converters for typesafe config (show library that does it: https://github.com/iheartradio/ficus) (10 min)
-- Examples in the wild (definitions and usage): (10 min)
-  * Eq, Ord (standard library), Show
-  * Numeric (standard library)
-  * Parsing/serilization: JSON codecs (Play)
-  * Algebraic: monoid, group (Spire)
-  * Abstract: functor, applicative, monad (Scalaz, Cats)
-- Extras: macro libraries for typeclass generation (shapeless, machinist) (5 min)
+## Shapeless's Typeclass Derivation
 
+```
+import spire.implicits._
+import shapeless.contrib.spire._
+
+
+case class Clippy(annoyanceLevel: Int, persistence: Int)
+
+
+Clippy(5, 3) + Clippy(3, 4) // => Clippy(8, 7)
+```
+
+
+
+???
+- Some typeclasses can be derived mechanically given some case class or a sealed case class hierarchy
+- Examples include some of the standard typeclasses, monoids and Functors
+- Shapeless provides some machinery to generate the typeclass instances for us
+- And the library Shapless-contrib provides the machinery for some common typeclasses
+- In  this example by just using some magic imports, we automatically able to derive an `AdditiveMonoid` for `Clippy`
+- So without ever defining the `+` operator for it, we get and it does the right thing
+
+---
+class: center, middle, transition
+
+FIN
 
 
 
