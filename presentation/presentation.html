@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Typeclasses</title>
+<title>Typeclasses for the Masses</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <link rel='stylesheet' type='text/css' href='style.css' />
 </head>
@@ -10,7 +10,7 @@
 
 class: center, middle, transition, intro
 
-#  Typeclasses
+#  Typeclasses for the Masses
 
 .caption[Daniel Beskin]
 ???
@@ -23,7 +23,7 @@ class: center, middle, transition, intro
 ---
 class: center, middle, transition
 
-Motivation - Sorting
+Looking for Motivation
 
 ???
 - First, a bit of motivation to get ourselves started
@@ -320,7 +320,7 @@ get[List[String]](config, "clippy.tips")
 - For example
 --
 
-get[Clippy](config, "clippy.annoyanceLevel")
+get[Clippy](config, "clippy")
 
 ???
 - So what we want, is a "smart" function, that is open for extension by third parties
@@ -407,24 +407,26 @@ def get[A](config: Config, key: String)
 ```
 implicit val clippyReader = new ValueReader[Clippy] {
   def read(config: Config, key: String): Clippy =
-    Clippy(annoyanceLevel = config.getInt(key))
+    Clippy(name = get(config, s"$key.name"),
+           annoyanceLevel = get(config, s"$key.annoyanceLevel"),
+           tips = get(config, s"$key.tips"))
 }
 
 
-get[Clippy](config, "clippy.annoyanceLevel")
+get[Clippy](config, "clippy")
 
 
 {{content}}
 ```
 
 ???
+- Notice that we don't need to specify the type on `get`, since the type here can be inferred from the context
 - But we can do even fancier things, we can let the compiler do the hard work for us
-- As I mentioned previously, implicits are a way to communicate with the compiler
-- And the compiler can derive new things for us
-- Here's an example
 
---
 
+---
+## More Readers
+```
 implicit def optionValueReader[A: ValueReader] =
   new ValueReader[Option[A]] {
     def read(config: Config, key: String): Option[A] =
@@ -434,7 +436,11 @@ implicit def optionValueReader[A: ValueReader] =
 
 
 {{content}}
+```
 ???
+- As I mentioned previously, implicits are a way to communicate with the compiler
+- And the compiler can derive new things for us
+- Here's an example
 - This can be read as: given that we know how to read a value of some type `A`
 - Then we can automatically derive how to read a value of `Option[A]`
 - And it can be used as follows
@@ -470,7 +476,7 @@ implicit class ConfigOps(config: Config) {
 
 --
 
-config\.get[Clippy]("clippy.annoyanceLevel")
+config\.get[Clippy]("clippy")
 
 
 
@@ -582,7 +588,8 @@ trait InnerProductSpace[V, F] {
 - There's a whole bunch of typeclasses that can be defined to capture various concept in abstract algebra
 - This is just a sample from the typeclasses available in Spire
 - Although quite abstract these abstractions find their way into real code
-- For example, the `Monoid` type captures the notion of things that can be aggregated
+- For example, the `Monoid` type captures the notion of things that can be aggregated in parallel
+- This makes it the perfect abstraction for Map/Reduce
 - And it's quite popular in the world of big-data, as such, it's actually defined in a number of different libraries
 - One of the benefits of working with these abstract types is code reuse
 --
@@ -635,7 +642,7 @@ trait Applicative[F[_]] extends Functor[F] {
 
 - `Applicative` gives us a `map` on steroids
 - `map2` lets us combine values inside a context
-- This might somewhat abstract, but the weird operators that we use with `Validation` are defined in terms of `Applicative`
+- This might be somewhat abstract, but the weird operators that we use with `Validation` are defined in terms of `Applicative`
 - In this case `Validation` is the context and `map2` let's us build complicated objects from validated parts
 - Let's look at an example of a useful function that can be written in terms of `Applicative`
 ---
@@ -671,24 +678,36 @@ def sequence[F[_], A](fs: List[F[A]])
 ???
 - It's a bit tricky, but if you just follow the types, it kind of writes itself
 - Figuring out how it works is left as an exercise
-
+- And here's a usage example
+--
 
 ```
-trait Monad[F[_]] extends Applicative[F] {
-  def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
-}
+
+
+sequence(List(Option(1), Option(2), Option(3))
+// => Some(List(1, 2, 3))
+
+
+sequence(List(Option(1), None, Option(3)))
+// => None
 ```
 
 ???
+- This will work given that we actually defined an `Applicative` instance for `Option`
+- Similarly, we can apply `sequence` to `Future` or `Validation`
+- `Functor`, `Applicative` and many others are available in Scalaz and Cats
+- This concludes our overview of typeclasses in the ecosystem
 
-- The infamous `Monad` defines `flatMap`
-- We will not delve into a full `Monad` explanation here
-- But for this context we can think of `Monad`s as letting us sequence computations inside of a context
-- So given some value in a context, like in a future
-- We can take a function that produces another future and apply it inside the original future
-- The final result is yet another future
-- `Monad`s are actually the theoretical foundation for "for comprehesions", also known as "monad comprehensions"
+---
+class: center, middle, transition
 
+Extras
+
+???
+
+- We are almost done
+- As a finishing touch, we'll touch upon a couple of advanced libraries that make the usage of typeclasses a bit more pleasant
+---
 
 
 ---
