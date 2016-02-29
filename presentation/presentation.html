@@ -21,7 +21,7 @@ class: center, middle, transition
 > All problems in programming can be solved by another typeclass
   <br />...except for the problem of too many typeclasses.
 
-.footnote[\- Old programming wisdom, slightly paraphrased]
+.footnote[― Old programming wisdom, slightly paraphrased]
 
 ???
 - Typeclasses are a functional "design pattern" and a way to create abstractions
@@ -75,7 +75,7 @@ case class Clippy(annoyanceLevel: Int) extends Orderable[Clippy] {
 ## Java-style, take #2 - Adapter
 
 ```
-trait Oredring[A] {
+trait Ordering[A] {
   def compare(x: A, y: A): Int
 }
 
@@ -156,7 +156,7 @@ Typeclasses - Definition
 
 A class:
 ```
-trait Oredring[A] {
+trait Ordering[A] {
   def compare(x: A, y: A): Int
 }
 ```
@@ -182,7 +182,7 @@ implicit val clippyOrdering = new Ordering[Clippy] {
 - An instance is provided as an implicit value or definition
 - This is called "the Ordering instance for `Clippy`"
 - What we are doing is declaring the fact that the type can be ordered, and tell the compiler how
-- In other words: the `Clippy` type belongs to a class of types that have an `Oredring`
+- In other words: the `Clippy` type belongs to a class of types that have an `Ordering`
 - Hence the name of the pattern: "typeclasses"
 
 ---
@@ -208,7 +208,7 @@ def sort[A: Ordering](xs: List[A]): List[A]
 - The syntax is called a "context bound", meaning that we operate on `A`, given some context can be implicitly provided for `A`
 --
 
-Operator syntax
+Operator syntax:
 ```
 implicit class OrderingOps[A: Ordering](a: A) {
   def <=(other: A) = ???
@@ -579,7 +579,7 @@ trait Reads[A] {
 - Parsing and serialization is one of the most common use cases for typeclasses
 - Since pretty much by definition it's an open world problem
 - For example, Play! uses typeclasses for reading and writing JSON values for arbitrary types
-- Just like in the `ValueConverter` example, readers and writes can be automatically for complex types using definitions for basic types
+- Just like in the `ValueReader` example, readers and writes can be automatically for complex types using definitions for basic types
 - Play! has a macro that does that for case classes
 
 ---
