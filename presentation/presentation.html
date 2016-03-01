@@ -546,9 +546,9 @@ trait Ordering[A] { ... }
 --
 
 ```
-trait Numeric[T] {
-  def fromInt(x: Int): T
-  def abs(x: T): T
+trait Numeric[A] {
+  def fromInt(x: Int): A
+  def abs(x: A): A
   ...
 }
 ```
@@ -745,13 +745,23 @@ import simulacrum._
 @typeclass trait Monoid[A] {
   @op("|+|") def op(x: A, y: A): A
 }
+
+
+{{content}}
 ```
 
 ???
 - As you might have noticed, defining a new typeclass is a bit boilertlaty
 - We need to both define a trait for the typeclass and a class for the implicit operations
 - The Simulacrum library let's you cut down on the boilerplate by using a macro annotation
+--
+
+implicit val clippyMonoid: Monoid[Clippy] = ???
+
+Clippy(5) |+| Clippy(4)
+???
 - With this definition, we define a single trait and get both the typeclass definition and the implicit operators generated for us
+- And we can use it for anything that implements the typeclass
 - This is almost half way towards language support
 ---
 
