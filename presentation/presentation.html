@@ -25,7 +25,7 @@ class: center, middle, transition
 
 ???
 - Typeclasses are a functional "design pattern" and a way to create abstractions
-- It allows us to write extendible code at the right level of abstraction
+- It allows us to write extensible code at the right level of abstraction
 - This pattern is very common in the Scala ecosystem
 - Learning it will make various libraries easier to use
 ---
@@ -51,7 +51,7 @@ trait Orderable[A] {
 
 ???
 - Here's a naive Java style attempt
-- We define a `Orderable` trait for things that can be sorted by our function
+- We define an `Orderable` trait for things that can be sorted by our function
 
 --
 def sort[A <: Orderable](xs: List[A]): List[A]
@@ -85,7 +85,7 @@ trait Ordering[A] {
 
 ???
 - Taking out our design patterns book, the Adapter design pattern fits the bill
-- It allows to adapt existing classes to our new abtraction
+- It allows us to adapt existing classes to our new abstraction
 - We now define `Ordering` as a standalone entity
 
 --
@@ -111,7 +111,7 @@ sort(List(c1, c2, c3), clippyOrdering)
 
 ???
 - We now have an extensible ordering, but the usage is a bit clumsy, we have
-to pass these `Ordering` around
+to pass these `Ordering`s around
 - Given that we use Scala, we can sprinkle some implicit magic to make it a bit
 nicer to use
 
@@ -164,7 +164,7 @@ trait Ordering[A] {
 - A typeclasses consists of a "class definition"
 - Typically a trait, parameterized by a type variable, `A`
 - With methods operating on `A`
-- The terminonlogy comes from Haskell, where type classes are an actual specially supported language feature
+- The terminonlogy comes from Haskell, where typeclasses are an actual specially supported language feature
 - The word "class" here has nothing to do with OO-style classes
 --
 
@@ -219,7 +219,7 @@ Clippy(2) <= Clippy(5)
 ```
 
 ???
-- Since typeclasses are defined outside the object that actually use them
+- Since typeclasses are defined outside the objects that actually use them
 - It's often use the pimp my type pattern to define operator syntax for instances of some classes
 - This reads as follows: given that `A` has an instance of `Ordering`, we can use the following methods/operators on it
 - Where inside the definitions will make some use of of the implicit typeclass instance that we have in scope
@@ -372,7 +372,6 @@ implicit val intValueReader = new ValueReader[Int] {
 - This is just a wrapper around the original functionality
 - We are adapting it to our new typeclass interface
 - Similarly, we can define instances for all the built-in config getters
-- Let's how we define our getter function
 --
 
 implicit val stringValueReader = new ValueReader[String] {
@@ -388,6 +387,7 @@ implicit val stringListValueReader = new ValueReader[List[String]] {
 ???
 - And similarly for other primitive types
 - Note that here we already adapt the list to be a Scala `List`, so we already gained some adapting benefit
+- Let's see how we define our getter function
 ---
 
 ## The Getter Function
@@ -414,7 +414,7 @@ def get[A](config: Config, key: String)
 
 ???
 - So what have we gained from writing it this way?
-- First, this solution is extensible, anyone can write a `ValueReader` for any type they want
+- This solution is extensible, anyone can write a `ValueReader` for any type they want
 - Like so
 
 ---
@@ -487,7 +487,7 @@ implicit class ConfigOps(config: Config) {
 
 ???
 - It may feel a bit unnatural to use our `get` function, since it's not on `config`
-- To remedy this, we can use the `pimp my class pattern` to make it nicer to use
+- To remedy this, we can use the "pimp my type pattern" to make it nicer to use
 
 --
 ```
@@ -579,7 +579,7 @@ trait Reads[A] {
 - Parsing and serialization is one of the most common use cases for typeclasses
 - Since pretty much by definition it's an open world problem
 - For example, Play! uses typeclasses for reading and writing JSON values for arbitrary types
-- Just like in the `ValueReader` example, readers and writes can be automatically for complex types using definitions for basic types
+- Just like in the `ValueReader` example, readers and writes can be automatically derived for complex types using definitions for basic types
 - Play! has a macro that does that for case classes
 
 ---
@@ -604,7 +604,7 @@ trait InnerProductSpace[V, F] {
 ```
 
 ???
-- There's a whole bunch of typeclasses that can be defined to capture various concept in abstract algebra
+- There's a whole bunch of typeclasses that can be defined to capture various concepts in abstract algebra
 - This is just a sample from the typeclasses available in Spire
 - Although quite abstract these abstractions find their way into real code
 - For example, the `Monoid` type captures the notion of things that can be aggregated in parallel
@@ -685,7 +685,7 @@ def sequence[F[_]: Applicative, A](fs: List[F[A]]): F[List[A]]
 - Create a list of things and put the whole list inside the context
 - You may be familiar with something similar: the `sequence` function on `Future` in the standard library
 - This one is a generalization that works for anything that has an `Applicative` instance
-- Like `Option`s `Validation`s and whatnot
+- Like `Option`s, `Validation`s and whatnot
 - We need to write it once in term of `Applicative` and we get all these use cases for free
 - Here's the implementation
 
